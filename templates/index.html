@@ -59,8 +59,14 @@ bar.style.width="5%"
 const fd=new FormData(form)
 const res=await fetch("/create",{method:"POST",body:fd})
 const data=await res.json()
-job_id=data.job_id
 
+if(data.status==="error"){
+status.innerText=data.message||"Error"
+bar.style.width="0%"
+return
+}
+
+job_id=data.job_id
 pollProgress()
 })
 
@@ -69,8 +75,8 @@ const interval=setInterval(async()=>{
 const res=await fetch("/progress/"+job_id)
 const data=await res.json()
 
-bar.style.width=data.percent+"%"
-status.innerText=data.message
+bar.style.width=(data.percent||0)+"%"
+status.innerText=data.message||"Working..."
 
 if(data.status==="done"||data.status==="error"){
 clearInterval(interval)
