@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Mashup Maker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+
+<div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-xl">
+
+<h1 class="text-3xl font-bold mb-6 text-center">🎧 Mashup Maker</h1>
+
+<form id="form" class="space-y-4">
+
+<input name="singer" required placeholder="Singer / Query"
+class="w-full border p-3 rounded-lg"/>
+
+<input name="email" required placeholder="Email"
+class="w-full border p-3 rounded-lg"/>
+
+<div class="grid grid-cols-2 gap-4">
+<input name="n_videos" type="number" value="11"
+class="border p-3 rounded-lg"/>
+<input name="duration" type="number" value="21"
+class="border p-3 rounded-lg"/>
+</div>
+
+<button
+class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white w-full py-3 rounded-lg text-lg font-semibold">
+🚀 Create Mashup
+</button>
+
+</form>
+
+<div class="mt-6">
+<div id="status" class="text-sm text-gray-600">Idle</div>
+<div class="w-full bg-gray-200 h-3 rounded mt-2">
+<div id="bar" class="bg-indigo-600 h-3 rounded w-0 transition-all"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+const form=document.getElementById("form")
+const bar=document.getElementById("bar")
+const status=document.getElementById("status")
+
+let job_id=null
+
+form.addEventListener("submit",async(e)=>{
+e.preventDefault()
+
+status.innerText="Starting..."
+bar.style.width="5%"
+
+const fd=new FormData(form)
+const res=await fetch("/create",{method:"POST",body:fd})
+const data=await res.json()
+job_id=data.job_id
+
+pollProgress()
+})
+
+function pollProgress(){
+const interval=setInterval(async()=>{
+const res=await fetch("/progress/"+job_id)
+const data=await res.json()
+
+bar.style.width=data.percent+"%"
+status.innerText=data.message
+
+if(data.status==="done"||data.status==="error"){
+clearInterval(interval)
+}
+},2000)
+}
+</script>
+
+</body>
+</html>
