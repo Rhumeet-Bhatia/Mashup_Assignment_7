@@ -92,7 +92,8 @@ def mashup_worker(job_id, singer, n_videos, duration, email):
 
         try:
             with YoutubeDL(ydl_opts) as ydl:
-                ydl.download([f"ytsearch{n_videos}:{singer} songs"])
+            query = f"ytsearch{n_videos}:{singer} official audio"
+            ydl.download([query])
         except Exception as e:
             raise RuntimeError(f"Download failed: {e}")
 
