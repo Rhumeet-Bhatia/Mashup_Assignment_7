@@ -2,4 +2,3 @@ Flask
 yt-dlp
 pydub
 gunicorn
-pyaudioop
