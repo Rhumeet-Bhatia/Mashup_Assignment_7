@@ -10,10 +10,13 @@ from email.message import EmailMessage
 from yt_dlp import YoutubeDL
 from pydub import AudioSegment
 
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
 
 SMTP_EMAIL = "rbhatia_be23@thapar.edu"
-SMTP_PASSWORD = "bsenamplzihfswuk"
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 jobs = {}
 
