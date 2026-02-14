@@ -8,8 +8,6 @@ import smtplib
 from flask import Flask, request, jsonify, render_template
 from email.message import EmailMessage
 from yt_dlp import YoutubeDL
-from pydub import AudioSegment
-from pydub.exceptions import CouldntDecodeError
 
 app = Flask(__name__)
 
@@ -22,6 +20,7 @@ def send_email(receiver, file_path):
     try:
         if not receiver or "@" not in receiver or "." not in receiver:
             raise ValueError("Invalid receiver email")
+
         if not os.path.exists(file_path):
             raise FileNotFoundError("Attachment file missing")
 
@@ -76,10 +75,12 @@ def mashup_worker(job_id, singer, n_videos, duration, email):
             "outtmpl":os.path.join(audios,"%(id)s.%(ext)s"),
             "quiet":True,
             "noplaylist":True,
-            "postprocessors":[{
-                "key":"FFmpegExtractAudio",
-                "preferredcodec":"mp3"
-            }]
+            "postprocessors":[
+                {
+                    "key":"FFmpegExtractAudio",
+                    "preferredcodec":"mp3"
+                }
+            ]
         }
 
         jobs[job_id].update({"status":"downloading","percent":20,"message":"Downloading audio"})
@@ -92,8 +93,6 @@ def mashup_worker(job_id, singer, n_videos, duration, email):
 
         jobs[job_id].update({"status":"processing","percent":60,"message":"Processing audio"})
 
-        clips=[]
-
         try:
             files=os.listdir(audios)
         except Exception:
@@ -102,36 +101,33 @@ def mashup_worker(job_id, singer, n_videos, duration, email):
         if not files:
             raise RuntimeError("No videos found for this singer")
 
+        trimmed=[]
+
         for f in files:
             if f.endswith(".mp3"):
-                path=os.path.join(audios,f)
-                try:
-                    audio=AudioSegment.from_file(path)
-                except CouldntDecodeError:
-                    continue
-                except Exception as e:
-                    raise RuntimeError(f"Audio decode error: {e}")
+                inp=os.path.join(audios,f)
+                out=os.path.join(audios,"trim_"+f)
+                cmd=f'ffmpeg -y -i "{inp}" -t {duration} -vn "{out}"'
+                ret=os.system(cmd)
+                if ret==0 and os.path.exists(out):
+                    trimmed.append(out)
 
-                if len(audio)>=duration*1000:
-                    clips.append(audio[:duration*1000])
-
-        if not clips:
+        if not trimmed:
             raise RuntimeError("No valid clips generated")
 
-        try:
-            final=AudioSegment.empty()
-            for c in clips:
-                final+=c
-        except Exception as e:
-            raise RuntimeError(f"Audio merge failed: {e}")
+        list_file=os.path.join(audios,"list.txt")
+
+        with open(list_file,"w") as lf:
+            for t in trimmed:
+                lf.write(f"file '{os.path.abspath(t)}'\n")
 
         os.makedirs("outputs",exist_ok=True)
+
         mp3_path=f"outputs/{job_id}.mp3"
 
-        try:
-            final.export(mp3_path,format="mp3")
-        except Exception as e:
-            raise RuntimeError(f"Export failed: {e}")
+        merge_cmd=f'ffmpeg -y -f concat -safe 0 -i "{list_file}" -c copy "{mp3_path}"'
+        if os.system(merge_cmd)!=0:
+            raise RuntimeError("Audio merge failed")
 
         zip_path=f"outputs/{job_id}.zip"
 
