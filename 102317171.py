@@ -14,7 +14,7 @@ def main(argv):
         return
     out = argv[4]
     try:
-        res = create_mashup(singer, n, d, out, log_fn=print)
+        res = create_mashup(singer, n, d, out)
         print("completed", res)
     except Exception as e:
         print("error", str(e))
