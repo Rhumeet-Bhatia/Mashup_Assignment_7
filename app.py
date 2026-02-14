@@ -71,16 +71,21 @@ def mashup_worker(job_id, singer, n_videos, duration, email):
             raise ValueError("Invalid duration")
 
         ydl_opts = {
-            "format":"bestaudio[ext=m4a]/bestaudio",
-            "outtmpl":os.path.join(audios,"%(id)s.%(ext)s"),
-            "quiet":True,
-            "noplaylist":True,
-            "postprocessors":[
-                {
-                    "key":"FFmpegExtractAudio",
-                    "preferredcodec":"mp3"
-                }
-            ]
+            "format": "bestaudio[ext=m4a]/bestaudio",
+            "outtmpl": os.path.join(audios, "%(id)s.%(ext)s"),
+            "quiet": True,
+            "noplaylist": True,
+            "extract_flat": False,
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept-Language": "en-US,en;q=0.9"
+            },
+            "sleep_interval": 2,
+            "max_sleep_interval": 5,
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3"
+            }]
         }
 
         jobs[job_id].update({"status":"downloading","percent":20,"message":"Downloading audio"})
